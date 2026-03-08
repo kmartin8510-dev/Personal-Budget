@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<title>Budget</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, serif;
+    background: #f7f9fc;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #fff;
+    border-bottom: 2px solid #1e3a5f;
+    padding: 18px 32px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  header h1 { font-size: 20px; font-weight: bold; color: #1e3a5f; letter-spacing: 0.02em; }
+  header span { font-size: 13px; color: #888; }
+
+  .container {
+    max-width: 1100px;
+    margin: 32px auto;
+    padding: 0 24px;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 28px;
+  }
+
+  @media (max-width: 768px) {
+    .container { grid-template-columns: 1fr; margin: 16px auto; padding: 0 16px; }
+    header { padding: 14px 16px; }
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid #dedede;
+    border-radius: 4px;
+    padding: 28px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #1e3a5f;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e8eef5;
+  }
+
+  .summary-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .summary-item {
+    flex: 1;
+    min-width: 100px;
+    background: #e8eef5;
+    border-radius: 4px;
+    padding: 14px 16px;
+  }
+  .summary-item .s-label {
+    font-size: 9px;
+    font-weight: bold;
+    color: #1e3a5f;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .summary-item .s-val {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1e3a5f;
+  }
+  .summary-item .s-val.over { color: #c0392b; }
+
+  .budget-table { width: 100%; border-collapse: collapse; }
+  .budget-table th {
+    font-size: 9px;
+    font-weight: bold;
+    color: #1e3a5f;
+    background: #e8eef5;
+    padding: 8px 10px;
+    text-align: left;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .budget-table th.num { text-align: right; }
+  .budget-table td {
+    padding: 10px;
+    font-size: 13px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+  .budget-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .budget-table tr:last-child td { border-bottom: none; }
+  .budget-table tr:nth-child(even) td { background: #fafafa; }
+  .budget-table tr.total-row td {
+    background: #e8eef5 !important;
+    font-weight: bold;
+    color: #1e3a5f;
+    border-top: 1px solid #c5d3e0;
+  }
+
+  .over { color: #c0392b; font-weight: bold; }
+  .ok   { color: #27ae60; }
+  .warn { color: #e67e22; }
+
+  .status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .dot-ok   { background: #27ae60; }
+  .dot-over { background: #c0392b; }
+  .dot-warn { background: #e67e22; }
+
+  .form-group { margin-bottom: 16px; }
+  label {
+    display: block;
+    font-size: 9px;
+    font-weight: bold;
+    color: #1e3a5f;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  input, select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #dedede;
+    border-radius: 3px;
+    font-family: Georgia, serif;
+    font-size: 13px;
+    color: #1a1a1a;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus { border-color: #1e3a5f; }
+
+  .btn {
+    width: 100%;
+    padding: 11px;
+    background: #1e3a5f;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-family: Georgia, serif;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: background 0.15s;
+    margin-top: 4px;
+  }
+  .btn:hover { background: #16304f; }
+  .btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  .msg {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    display: none;
+  }
+  .msg.success { background: #eafaf1; color: #27ae60; border: 1px solid #a9dfbf; display: block; }
+  .msg.error   { background: #fdf0ef; color: #c0392b; border: 1px solid #f5b7b1; display: block; }
+
+  .loading { text-align: center; color: #888; font-size: 13px; padding: 32px 0; }
+
+  .refresh-btn {
+    float: right;
+    font-size: 11px;
+    color: #1e3a5f;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: Georgia, serif;
+    text-decoration: underline;
+    padding: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Budget</h1>
+  <span>March 2026</span>
+</header>
+
+<div class="container">
+  <div>
+    <div class="card">
+      <div class="card-title">
+        This Month
+        <button class="refresh-btn" onclick="loadBudget()">↻ Refresh</button>
+      </div>
+
+      <div class="summary-bar" id="summaryBar" style="display:none">
+        <div class="summary-item">
+          <div class="s-label">Budgeted</div>
+          <div class="s-val" id="sumBudgeted">—</div>
+        </div>
+        <div class="summary-item">
+          <div class="s-label">Spent</div>
+          <div class="s-val" id="sumSpent">—</div>
+        </div>
+        <div class="summary-item">
+          <div class="s-label">Remaining</div>
+          <div class="s-val" id="sumRemaining">—</div>
+        </div>
+      </div>
+
+      <div id="budgetContent"><div class="loading">Loading your budget...</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">Log Expense</div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="expDate" />
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="expCat">
+          <option value="">Select category...</option>
+          <option>Housing (Rent/Mortgage)</option>
+          <option>Groceries</option>
+          <option>Utilities</option>
+          <option>Transportation</option>
+          <option>Dining Out / Entertainment</option>
+          <option>Health / Medical</option>
+          <option>Savings / Investments</option>
+          <option>Personal / Misc</option>
+          <option>Tennis</option>
+          <option>Home</option>
+          <option>Personal Care</option>
+          <option>Subscriptions</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="expDesc" placeholder="e.g. Trader Joe's" />
+      </div>
+      <div class="form-group">
+        <label>Amount ($)</label>
+        <input type="number" id="expAmt" placeholder="0.00" step="0.01" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Notes (optional)</label>
+        <input type="text" id="expNotes" />
+      </div>
+      <button class="btn" id="submitBtn" onclick="logExpense()">Add Expense</button>
+      <div class="msg" id="formMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyR-FAmmJR6nea9I43jMu7IJxmfo9B_rOI4w4rvZP-CY6U-TSSrnx7_r6DwEK9C5d2W/exec";
+
+  const today = new Date();
+  document.getElementById("expDate").value = today.toISOString().split("T")[0];
+
+  function fmt(n) {
+    const abs = Math.abs(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
+    return (n < 0 ? "-$" : "$") + abs;
+  }
+
+  async function loadBudget() {
+    const el = document.getElementById("budgetContent");
+    el.innerHTML = '<div class="loading">Loading...</div>';
+    document.getElementById("summaryBar").style.display = "none";
+
+    try {
+      const res  = await fetch(WEB_APP_URL);
+      const rows = await res.json();
+
+      if (!rows.length) {
+        el.innerHTML = '<div class="loading">No data found.</div>';
+        return;
+      }
+
+      let totalBudgeted = 0, totalSpent = 0;
+      rows.forEach(r => {
+        totalBudgeted += parseFloat(r.budgeted) || 0;
+        totalSpent    += parseFloat(r.spent)    || 0;
+      });
+      const totalRem = totalBudgeted - totalSpent;
+
+      document.getElementById("summaryBar").style.display = "flex";
+      document.getElementById("sumBudgeted").textContent = fmt(totalBudgeted);
+      document.getElementById("sumSpent").textContent    = fmt(totalSpent);
+      const remEl = document.getElementById("sumRemaining");
+      remEl.textContent = fmt(totalRem);
+      remEl.className   = "s-val" + (totalRem < 0 ? " over" : "");
+
+      let html = `<table class="budget-table">
+        <thead><tr>
+          <th>Category</th>
+          <th class="num">Budgeted</th>
+          <th class="num">Spent</th>
+          <th class="num">Remaining</th>
+          <th class="num">Status</th>
+        </tr></thead><tbody>`;
+
+      rows.forEach(r => {
+        const bud = parseFloat(r.budgeted) || 0;
+        const spt = parseFloat(r.spent)    || 0;
+        const rem = bud - spt;
+        const pct = bud > 0 ? spt / bud : 0;
+
+        let sc = "ok", dc = "dot-ok", st = "✓";
+        if (rem < 0)         { sc = "over"; dc = "dot-over"; st = "OVER"; }
+        else if (pct > 0.85) { sc = "warn"; dc = "dot-warn"; st = "85%+"; }
+
+        html += `<tr>
+          <td>${r.category}</td>
+          <td class="num">${fmt(bud)}</td>
+          <td class="num">${fmt(spt)}</td>
+          <td class="num ${rem < 0 ? "over" : ""}">${fmt(rem)}</td>
+          <td class="num"><span class="status-dot ${dc}"></span><span class="${sc}">${st}</span></td>
+        </tr>`;
+      });
+
+      html += "</tbody></table>";
+      el.innerHTML = html;
+
+    } catch(e) {
+      el.innerHTML = `<div class="loading" style="color:#c0392b">Could not load data. Make sure your Web App is deployed and accessible.</div>`;
+    }
+  }
+
+  async function logExpense() {
+    const date  = document.getElementById("expDate").value;
+    const cat   = document.getElementById("expCat").value;
+    const desc  = document.getElementById("expDesc").value.trim();
+    const amt   = document.getElementById("expAmt").value;
+    const notes = document.getElementById("expNotes").value.trim();
+    const msg   = document.getElementById("formMsg");
+    const btn   = document.getElementById("submitBtn");
+
+    msg.className = "msg";
+    msg.style.display = "none";
+
+    if (!date || !cat || !desc || !amt) {
+      msg.textContent = "Please fill in date, category, description and amount.";
+      msg.className = "msg error";
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    try {
+      const month = new Date(date + "T12:00:00").toLocaleDateString("en-US", {month:"long", year:"numeric"});
+      const payload = { date, category: cat, description: desc, amount: parseFloat(amt), notes, month };
+
+      const res  = await fetch(WEB_APP_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error("Write failed");
+
+      msg.textContent = "Expense added!";
+      msg.className = "msg success";
+
+      document.getElementById("expCat").value   = "";
+      document.getElementById("expDesc").value  = "";
+      document.getElementById("expAmt").value   = "";
+      document.getElementById("expNotes").value = "";
+      document.getElementById("expDate").value  = today.toISOString().split("T")[0];
+
+      setTimeout(loadBudget, 1000);
+
+    } catch(e) {
+      msg.textContent = "Could not save. Please try again.";
+      msg.className = "msg error";
+    }
+
+    btn.disabled = false;
+    btn.textContent = "Add Expense";
+  }
+
+  loadBudget();
+</script>
+</body>
+</html>
